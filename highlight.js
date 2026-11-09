@@ -13,6 +13,15 @@
     const loadingText = $("loadingText");
     const manuallyPositionedNodes = new Map();
 
+    const controls = document.getElementById("controls");
+    const toggleButton = document.getElementById("toggleControls");
+
+    toggleButton.addEventListener("click", () => {
+        const isHidden = controls.style.display === "none";
+
+        controls.style.display = isHidden ? "block" : "none";
+        toggleButton.textContent = isHidden ? "Hide controls" : "Show controls";
+    });
     // ---------------- LOADING BAR ----------------
     function setProgress(fraction) {
         const pct = Math.round(Math.min(1, Math.max(0, fraction)) * 100);
