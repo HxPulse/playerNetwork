@@ -1,13 +1,12 @@
 #%%
 import requests
-import webbrowser
 import time
-import sys
 import json
+import webbrowser
+from pathlib import Path
 from collections import defaultdict
 from itertools import combinations
-print(sys.executable)
-from pyvis.network import Network
+import os
 
 rifts = [
  {'slug': 'dead-end-s1w1', 'name': 'Dead End', 'period': 's1w1'},
@@ -153,7 +152,7 @@ rifts = [
  {'slug': 'reflexology-s6w4', 'name': 'Reflexology', 'period': 's6w4'},
  {'slug': 'garbage-disposal-s6w4', 'name': 'Garbage Disposal', 'period': 's6w4'},
  {'slug': 'back-alley-brawl-s6w4', 'name': 'Back Alley Brawl', 'period': 's6w4'}]
-API_KEY = "cs_5d1fcd28cbfcb2d2f981422cf995282459b5a83f929e17ee"
+API_KEY = os.getenv("CELLSTRING_API_KEY")
 BASE_URL = "https://api.cellstring.com/games/moco/leaderboard/"
 CACHE_FILE = "players.json"
 headers = {"X-API-Key": API_KEY}
@@ -163,7 +162,6 @@ def get_with_retry(url, headers, max_retries=10):
         response = requests.get(url, headers=headers, timeout=30)
 
         if response.status_code == 429:
-            print(f"Rate limited. Waiting 30s... ({attempt + 1}/{max_retries})")
             time.sleep(30)
             continue
 
@@ -173,7 +171,7 @@ def get_with_retry(url, headers, max_retries=10):
     raise Exception(f"Max retries reached for {url}")
 
 def fetch_data():
-
+    # Fetches cellstring API
     players = defaultdict(lambda: {
         "tag": None,
         "name": None,
@@ -187,14 +185,12 @@ def fetch_data():
 
         data = get_with_retry(BASE_URL + slug, headers)
 
-        # Ensure slug ends with its period
         if not slug.endswith("-" + period):
             slug = f"{slug}-{period}"
 
         print(f"Fetching {slug}...")
 
-        # Adapt this if your API wraps results differently.
-        rows = data if isinstance(data, list) else (
+        rows = data if isinstance(data, list) else (    # Get LB entries
             data.get("entries", data.get("leaderboard", data.get("data", [])))
         )
 
@@ -206,10 +202,10 @@ def fetch_data():
             if not tag:
                 continue
 
-            score = row.get("score") or {}
+            score = row.get("score") or {}  # if Score Hunt
 
             # Prefer valueSeconds, fallback to value
-            value = score.get("valueSeconds")
+            value = score.get("valueSeconds") # If Rift
             if value is None:
                 value = score.get("value")
 
@@ -229,14 +225,12 @@ def fetch_data():
             })
 
     players = dict(players)
-    # Save fetched data
     with open(CACHE_FILE, "w", encoding="utf-8") as f:
         json.dump(players, f, indent=2, ensure_ascii=False)
 
     print(f"Saved {len(players)} players to {CACHE_FILE}")
 
     return players
-
 
 def load_data():
 
@@ -248,7 +242,7 @@ def load_data():
     return players
 
 def build_connections(players):
-
+# Creates connections between players, 1 rift together = 1 connection
     connections = defaultdict(int)
     rift_entries = defaultdict(list)
 
@@ -261,7 +255,7 @@ def build_connections(players):
 
     for slug, entries in rift_entries.items():
 
-        for a, b in combinations(entries, 2):
+        for a, b in combinations(entries, 2):   # Has to be same slug, aka rift + period
 
             if a["tag"] == b["tag"]:
                 continue
@@ -278,105 +272,47 @@ def build_connections(players):
 # ---------------- GENERATE GRAPH ----------------
 
 def generate_graph(players, connections):
-    
-    MIN_CONNECTION_WEIGHT = 20
-    MIN_MATCHES = 3
 
-    connections = {
-        pair: weight
-        for pair, weight in connections.items()
+    MIN_MATCHES = 2     # Otherwise graph gets too heavy
+
+    filtered_connections = {
+        pair: weight for pair, weight in connections.items()
         if weight >= MIN_MATCHES
     }
 
     player_weights = defaultdict(int)
-
-    for (tag1, tag2), weight in connections.items():
+    for (tag1, tag2), weight in filtered_connections.items():
         player_weights[tag1] += weight
         player_weights[tag2] += weight
 
-    # Keep only sufficiently connected players
-    filtered_players = {
-        tag: player
+    nodes = [
+        {"id": tag, "label": player["name"] or tag}
         for tag, player in players.items()
-        if player_weights[tag] >= MIN_CONNECTION_WEIGHT
-    }
+        if tag in player_weights
+    ]
 
-    # Keep only connections between retained players
-    filtered_connections = {
-        pair: weight
-        for pair, weight in connections.items()
-        if pair[0] in filtered_players and pair[1] in filtered_players
-    }
+    edges = [
+        {
+            "from": tag1,
+            "to": tag2,
+            "value": weight,
+            "title": f"{weight} matching entries",
+        }
+        for (tag1, tag2), weight in filtered_connections.items()
+    ]
 
-    players = filtered_players
-    connections = filtered_connections
-    print(f"Players displayed: {len(players)}")
-    print(f"Connections displayed: {len(connections)}")
+    with open("graph_data.js", "w", encoding="utf-8") as f:
+        f.write("const GRAPH_DATA = ")
+        json.dump({"nodes": nodes, "edges": edges}, f, ensure_ascii=False)
+        f.write(";\n")
 
-    net = Network(
-        height="100vh", 
-        width="100%",
-        bgcolor="#111827",
-        font_color="white",
-        notebook=False,
-        cdn_resources="in_line"
-    )
-
-    net.repulsion(
-        node_distance=900,
-        central_gravity=0.05,
-        spring_length=250,
-        spring_strength=0.01,
-        damping=0.09
-    )
-
-    for tag, player in players.items():
-
-        degree = sum(
-            weight for pair, weight in connections.items()
-            if tag in pair
-        )
-
-        net.add_node(
-            tag,
-            label=player["name"] or tag,
-            title=f"{player["name"]}\n{tag}\nConnections: {degree}\n",
-            size=min(22, 8 + degree * 0.3),
-            color="#60A5FA",
-            font={
-                "size": 100,  
-                "face": "arial",
-                "bold": True,
-                "strokeWidth": 3,
-                "strokeColor": "#111827"
-            }
-        )
-
-    for (tag1, tag2), weight in connections.items():
-
-        net.add_edge(
-            tag1,
-            tag2,
-            value=weight,
-            title=f"{weight} matching entries",
-            color="#64748b",
-            originalColor="#64748b"
-        )
-
-    html = net.generate_html()
-
-    with open("highlight.js", "r", encoding="utf-8") as f:
-        js = f.read()
-
-    html = html.replace("</body>", f"<script>{js}</script></body>")
-    with open("player_network.html", "w", encoding="utf-8") as f:
-        f.write(html)
-    webbrowser.open("player_network.html")
+    print(f"Wrote {len(nodes)} nodes and {len(edges)} edges to graph_data.js")
+    webbrowser.open(Path("player_network.html").resolve().as_uri())
 
 
 # ---------------- MAIN ----------------
 
-# Change this to True whenever you want to refresh API data.
+# True to refresh API data.
 FETCH_NEW_DATA = False
 
 if FETCH_NEW_DATA:
@@ -385,77 +321,6 @@ else:
     players = load_data()
 
 connections = build_connections(players)
-#generate_graph(players, connections)
+generate_graph(players, connections)
 
-
-def get_top_connected_players(connections, players, limit=20):
-    player_connections = defaultdict(int)
-
-    # Sum connection weights for each player
-    for (tag1, tag2), weight in connections.items():
-        player_connections[tag1] += weight
-        player_connections[tag2] += weight
-
-    # Sort players by total connection weight
-    ranked = sorted(
-        player_connections.items(),
-        key=lambda x: x[1],
-        reverse=True
-    )
-
-    return [
-        {
-            "name": players[tag]["name"],
-            "tag": tag,
-            "connections": count
-        }
-        for tag, count in ranked[:limit]
-    ]
-
-def get_top_matching_pairs(connections, players, limit=20):
-    ranked = sorted(
-        connections.items(),
-        key=lambda x: x[1],
-        reverse=True
-    )
-
-    return [
-        {
-            "player1": players[tag1]["name"],
-            "player2": players[tag2]["name"],
-            "tag1": tag1,
-            "tag2": tag2,
-            "matches": weight
-        }
-        for (tag1, tag2), weight in ranked[:limit]
-    ]
-
-def get_player_top_connections(player_tag, connections, players, limit=15):
-    # Find all connections involving this player
-    results = []
-
-    for (tag1, tag2), weight in connections.items():
-        if tag1 == player_tag:
-            other_tag = tag2
-        elif tag2 == player_tag:
-            other_tag = tag1
-        else:
-            continue
-
-        results.append({
-            "tag": other_tag,
-            "name": players[other_tag]["name"],
-            "matchings": weight
-        })
-
-    # Sort by most matchings
-    results.sort(key=lambda x: x["matchings"], reverse=True)
-    results = results[:limit]
-
-    for i, player in enumerate(results, 1):
-        print(f"{i}. {player['name']} — {player['matchings']} matchings")
-
-    return
-
-top10 = get_player_top_connections("#G8P880G", connections, players)
 #%%
