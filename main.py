@@ -268,7 +268,6 @@ def build_connections(players):
 
     return connections
 
-
 # ---------------- GENERATE GRAPH ----------------
 
 def generate_graph(players, connections):
@@ -307,7 +306,7 @@ def generate_graph(players, connections):
         f.write(";\n")
 
     print(f"Wrote {len(nodes)} nodes and {len(edges)} edges to graph_data.js")
-    webbrowser.open(Path("player_network.html").resolve().as_uri())
+    webbrowser.open("https://hxpulse.github.io/moco-player-network/")
 
 
 # ---------------- MAIN ----------------
