@@ -213,10 +213,8 @@ def fetch_data():
                 continue
 
             player = players[tag]
-
             player["tag"] = tag
             player["name"] = name
-
             player["entries"].append({
                 "period": period,
                 "slug": slug,
@@ -254,12 +252,9 @@ def build_connections(players):
             })
 
     for slug, entries in rift_entries.items():
-
         for a, b in combinations(entries, 2):   # Has to be same slug, aka rift + period
-
             if a["tag"] == b["tag"]:
                 continue
-
             if a["score"] == b["score"]:
                 pair = tuple(sorted([a["tag"], b["tag"]]))
                 connections[pair] += 1
@@ -307,6 +302,7 @@ def generate_graph(players, connections):
 
     print(f"Wrote {len(nodes)} nodes and {len(edges)} edges to graph_data.js")
     webbrowser.open("https://hxpulse.github.io/playerNetwork/")
+    #webbrowser.open(Path("index.html").resolve().as_uri()) # for local tests
 
 
 # ---------------- MAIN ----------------

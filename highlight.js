@@ -38,11 +38,7 @@
     const edges = new vis.DataSet();
 
     const network = new vis.Network($("mynetwork"), { nodes, edges }, {
-        nodes: {
-            shape: "dot",
-            color: NODE_COLOR,
-            font: { color: "white" }
-        },
+        nodes: { shape: "dot", color: NODE_COLOR, font: { color: "white" }},
         edges: {
             color: { color: EDGE_COLOR, highlight: EDGE_COLOR, hover: EDGE_COLOR, inherit: false },
             smooth: { enabled: true, type: "dynamic" }
@@ -70,11 +66,7 @@
     network.on("dragEnd", params => {
         params.nodes.forEach(nodeId => {
             const position = network.getPositions([nodeId])[nodeId];
-
-            manuallyPositionedNodes.set(nodeId, {
-                x: position.x,
-                y: position.y
-            });
+            manuallyPositionedNodes.set(nodeId, { x: position.x, y: position.y });
         });
     });
 
@@ -88,8 +80,7 @@
             const dy = target.y - current.y;
 
             if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-                network.moveNode(
-                    nodeId,
+                network.moveNode( nodeId,
                     current.x + dx * 0.08,
                     current.y + dy * 0.08
                 );
@@ -132,10 +123,7 @@
 
                 // Find the player's 5 strongest connections, requiring > 3 matches.
                 const topMatches = allEdgeData
-                    .filter(edge =>
-                        (edge.from === node.id || edge.to === node.id) &&
-                        edge.value >= 3
-                    )
+                    .filter(edge => (edge.from === node.id || edge.to === node.id) && edge.value >= 3)
                     .sort((a, b) => b.value - a.value)
                     .slice(0, 5)
                     .map(edge => {

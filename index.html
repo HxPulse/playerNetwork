@@ -8,22 +8,13 @@
     #mynetwork { width: 100%; height: 100vh; }
 
     #controls {
-      position: fixed; top: 20px; left: 20px; z-index: 1000;
-      width: 280px; padding: 15px;
+      position: fixed; top: 20px; left: 20px; z-index: 1000; width: 280px; padding: 15px;
       background: #1f2937; border: 1px solid #475569; border-radius: 10px; color: white;
     }
     #controls .title { font-size: 18px; font-weight: bold; margin-bottom: 12px; }
-    #controls input {
-      width: 100%; box-sizing: border-box; margin: 5px 0 12px; padding: 9px;
-    }
-    #controls #playerSearch {
-      margin: 0; padding: 10px; background: #374151; color: white;
-      border: 1px solid #475569; border-radius: 6px;
-    }
-    #controls button {
-      width: 100%; padding: 10px; background: #2563eb; color: white;
-      border: 0; border-radius: 6px; cursor: pointer;
-    }
+    #controls input { width: 100%; box-sizing: border-box; margin: 5px 0 12px; padding: 9px; }
+    #controls #playerSearch { margin: 0; padding: 10px; background: #374151; color: white; border: 1px solid #475569; border-radius: 6px; }
+    #controls button { width: 100%; padding: 10px; background: #2563eb; color: white; border: 0; border-radius: 6px; cursor: pointer; }
     #controls hr { border-color: #475569; margin: 15px 0; }
     #graphStats { margin-top: 12px; font-size: 13px; }
 
@@ -37,6 +28,8 @@
     #loadingTrack { width: 500px; max-width: 80vw; height: 20px; background: #374151; border-radius: 10px; overflow: hidden; }
     #loadingFill { width: 0%; height: 100%; background: #00adf6; transition: width 0.1s linear; }
     #loadingText { margin-top: 12px; font-size: 20px; }
+
+    #cornerImage { position: fixed; bottom: 15px; right: 15px; width: 9vw; height: auto; opacity: 0.7; z-index: 500; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -51,13 +44,13 @@
       
       Click a node to highlight that player in red and reveal their strongest connection (the player with the most shared placements).<br/><br/>
       You can adjust the parameters to generate different versions of the graph.<br/><br/>
-      Lower values produce a larger graph (with more players), but also increases loading times.<br/><br/>
+      Lower values produce a larger graph (with more players), but also increases loading times (and lag).<br/><br/>
 
     </div>
-    <label for="minWeight">Minimum connections (Rec. 5)</label>
-    <input id="minWeight" type="number" min="0" step="1" value="7">
+    <label for="minWeight">Minimum connections (Rec. 5-10)</label>
+    <input id="minWeight" type="number" min="0" step="1" value="8">
 
-    <label for="minMatches">Minimum matches (Rec. 3)</label>
+    <label for="minMatches">Minimum matches (Rec. 3-7)</label>
     <input id="minMatches" type="number" min="2" step="1" value="3">
 
     <button id="generateButton">Generate graph</button>
@@ -75,6 +68,7 @@
     <div id="loadingText">0%</div>
   </div>
 
+  <img src="./code.png" id="cornerImage" alt="Logo">
   <script src="https://unpkg.com/vis-network@9.1.2/standalone/umd/vis-network.min.js"></script>
   <script src="./graph_data.js"></script>
   <script src="./highlight.js"></script>
