@@ -304,7 +304,6 @@ def generate_graph(players, connections):
     webbrowser.open("https://hxpulse.github.io/playerNetwork/")
     #webbrowser.open(Path("index.html").resolve().as_uri()) # for local tests
 
-
 # ---------------- MAIN ----------------
 
 # True to refresh API data.
@@ -317,5 +316,4 @@ else:
 
 connections = build_connections(players)
 generate_graph(players, connections)
-
 #%%

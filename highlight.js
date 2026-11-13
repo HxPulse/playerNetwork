@@ -22,6 +22,7 @@
         controls.style.display = isHidden ? "block" : "none";
         toggleButton.textContent = isHidden ? "Hide controls" : "Show controls";
     });
+    
     // ---------------- LOADING BAR ----------------
     function setProgress(fraction) {
         const pct = Math.round(Math.min(1, Math.max(0, fraction)) * 100);
